@@ -1,0 +1,6 @@
+{
+  "appId": "com.meu.app",
+  "appName": "Meu Painel",
+  "webDir": "www",
+  "server": { "url": "https://LINK-DO-SEU-SITE-AQUI.com", "cleartext": true }
+}
