@@ -1,0 +1,24 @@
+name: Gerar Meu APK
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with: {node-version: 18}
+      - name: Setup Android
+        run: |
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npx cap init "Nome Do App" "com.meu.app" --web-dir www
+          mkdir www && cp index.html www/
+          npx cap add android
+          npx cap copy
+      - name: Build APK
+        run: |
+          cd android && ./gradlew assembleDebug
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: meu-app-instalavel
+          path: android/app/build/outputs/apk/debug/app-debug.apk
