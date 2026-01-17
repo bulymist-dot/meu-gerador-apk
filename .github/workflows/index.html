@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gerador de App Instantâneo</title>
+    <link rel="manifest" id="manifest-link">
+    
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: sans-serif; background: #000; color: white; overflow: hidden; }
+        .setup-screen { padding: 20px; text-align: center; display: flex; flex-direction: column; justify-content: center; height: 100vh; box-sizing: border-box; }
+        input { padding: 15px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; width: 100%; box-sizing: border-box; }
+        button { background: #00ff00; color: black; border: none; padding: 20px; border-radius: 10px; font-weight: bold; font-size: 18px; cursor: pointer; }
+        iframe { display: none; width: 100%; height: 100%; border: none; }
+        #installBtn { display: none; position: fixed; bottom: 20px; right: 20px; z-index: 999; }
+    </style>
+</head>
+<body>
+
+    <div id="setup" class="setup-screen">
+        <h1>Criador de App</h1>
+        <input type="text" id="nameInput" placeholder="Nome do App (Ex: YouTube)">
+        <input type="url" id="urlInput" placeholder="https://youtube.com">
+        <button onclick="configurarApp()">ABRIR E INSTALAR</button>
+    </div>
+
+    <iframe id="appFrame" src=""></iframe>
+    
+    <button id="installBtn">BAIXAR APP AGORA</button>
+
+    <script>
+        let deferredPrompt;
+        const setupScreen = document.getElementById('setup');
+        const appFrame = document.getElementById('appFrame');
+        const installBtn = document.getElementById('installBtn');
+
+        // Captura o evento de instalação do Android
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Mostra o botão de instalar se o app estiver pronto
+            if(appFrame.style.display === 'block') {
+                installBtn.style.display = 'block';
+            }
+        });
+
+        function configurarApp() {
+            const nome = document.getElementById('nameInput').value;
+            const url = document.getElementById('urlInput').value;
+
+            if(!nome || !url) return alert("Preencha o nome e a URL!");
+
+            // 1. Muda o título da página
+            document.title = nome;
+
+            // 2. Cria o Manifesto dinamicamente para o Android reconhecer
+            const myManifest = {
+                "name": nome,
+                "short_name": nome,
+                "start_url": window.location.href,
+                "display": "standalone",
+                "background_color": "#000000",
+                "theme_color": "#000000",
+                "icons": [{
+                    "src": "https://cdn-icons-png.flaticon.com/512/2584/2584602.png",
+                    "sizes": "512x512",
+                    "type": "image/png"
+                }]
+            };
+            const stringManifest = JSON.stringify(myManifest);
+            const blob = new Blob([stringManifest], {type: 'application/json'});
+            document.getElementById('manifest-link').setAttribute('href', URL.createObjectURL(blob));
+
+            // 3. Troca as telas
+            setupScreen.style.display = 'none';
+            appFrame.src = url;
+            appFrame.style.display = 'block';
+
+            // 4. Se o navegador já permitiu, mostra o botão de instalar
+            if (deferredPrompt) {
+                installBtn.style.display = 'block';
+            } else {
+                alert("Para instalar: Clique nos 3 pontinhos do Chrome e selecione 'Instalar Aplicativo'");
+            }
+        }
+
+        // Ação do botão de instalar
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    installBtn.style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        });
+
+        // Registro obrigatório do Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('data:text/javascript;base64,c2VsZi5hZGRFdmVudExpc3RlbmVyKCdmZXRjaCcsIGZ1bmN0aW9uKGV2ZW50KSB7IH0pOw==');
+        }
+    </script>
+</body>
+</html>
